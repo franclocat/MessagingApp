@@ -1,6 +1,24 @@
-let messageContainer = document.querySelector("#messages");
-let inputField = document.querySelector("#input-msg");
-let sendButton = document.querySelector("#send-msg-btn");
+const messageContainer = document.querySelector("#messages");
+const inputField = document.querySelector("#input-msg");
+const sendButton = document.querySelector("#send-msg-btn");
+
+const loginButton = document.querySelector("#send-username-btn");
+const usernameField = document.querySelector("#input-username");
+const mainContainer = document.querySelector(".container");
+const loginContainer = document.querySelector(".login-container");
+let username = "";
+
+function changeDisplay() {
+    if (usernameField.value !== "") {
+        username = usernameField.value; //get the username from the login input field if the value is not empty
+        loginContainer.style.display = "none"; //change the css display value form flex to none in order to hide it 
+        mainContainer.style.display = "flex"; //change the css display value form none to flex in order to show it
+    } else {
+        console.log("THE USERNAME HAS TO BE AT LEAST 1 CHARACTER LONG"); 
+    }
+}
+
+loginButton.addEventListener("click", changeDisplay); //show the messages on click of the login button
 
 const websocket = new WebSocket("ws://localhost:8080/chat");
 
