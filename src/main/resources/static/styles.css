@@ -116,3 +116,7 @@ body {
     cursor: pointer;
     flex: 1;
 }
+
+.sender {
+    font-size: small;
+}

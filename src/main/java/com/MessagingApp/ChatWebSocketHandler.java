@@ -1,26 +1,40 @@
 package com.MessagingApp;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.LoggerFactory;
 
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private static List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
+    private List<Message> allMessages = new CopyOnWriteArrayList<>();
+
+    private ObjectMapper mapper = new ObjectMapper();
+    
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ChatWebSocketHandler.class);
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
+        showPrevoiusMessages(session);//send all the messages in the messages list to the newly joined user
         //broadcast("User joined the chat!");
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        broadcast(message.getPayload());
+        Message messageObject = mapper.readValue(message.getPayload(), Message.class); //convert the received TextMessage (JSON String) to a Message object
+        LOGGER.info(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(messageObject));
+        allMessages.add(messageObject);//add the message object to the allMessages list
+        LOGGER.info("The message object has been added to the allMessages List");
+        broadcast(messageObject);
     }
 
     @Override
@@ -29,9 +43,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         //broadcast("User left the chat!");
     }
 
-    private void broadcast(String message) throws IOException {
+    private void broadcast(Message message) throws IOException {
+        String jsonMessage = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(message); //Convert the passed Message object back into a JSON String
+        LOGGER.info(jsonMessage);
         for (WebSocketSession session : sessions) {
-            session.sendMessage(new TextMessage(message));
+            session.sendMessage(new TextMessage(jsonMessage)); //send the JSON String to every session in the sessions list
+        }
+    }
+
+    private void showPrevoiusMessages(WebSocketSession session) throws IOException {
+        for (Message message : allMessages) {
+            session.sendMessage(new TextMessage(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(message)));
         }
     }
 }
