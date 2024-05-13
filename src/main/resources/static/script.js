@@ -51,11 +51,13 @@ function displayMessage(sender, message) {
 function sendMessage() {
     if (inputField.value !== "") {
         const messageContent = inputField.value;
+        const date = new Date().toISOString();
+        console.log(date);
         //Create a JS object that has the attributes of the Message class defined in the backend
         const message = {
             sender: username,
-            content: messageContent
-            //createdAt: new Date()
+            content: messageContent,
+            createdAt: date
         };
 
         console.log("JS Object created: " + message);

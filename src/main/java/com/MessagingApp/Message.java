@@ -10,10 +10,10 @@ public class Message {
     public Message() {
     }
 
-    public Message(String sender, String content) {
+    public Message(String sender, String content, LocalDateTime createdAt) {
         this.sender = sender;
         this.content = content;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = createdAt;
     }
 
     public String getSender() {

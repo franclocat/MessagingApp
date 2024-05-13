@@ -117,6 +117,19 @@ body {
     flex: 1;
 }
 
+
+
+#test2 {
+    display: flex;
+    justify-content: space-between;
+}
+
 .sender {
+    font-size: small;
+    padding-right: 8px;
+    padding-bottom: 5px;
+}
+
+.date {
     font-size: small;
 }
