@@ -1,75 +1,90 @@
-const messageContainer = document.querySelector("#messages");
-const inputField = document.querySelector("#input-msg");
-const sendButton = document.querySelector("#send-msg-btn");
-
-const loginButton = document.querySelector("#send-username-btn");
-const usernameField = document.querySelector("#input-username");
-const mainContainer = document.querySelector(".container");
 const loginContainer = document.querySelector(".login-container");
-let username = "";
+const inputUsername = document.querySelector("#input-username");
+const sendUsernameButton = document.querySelector("#send-username-btn");
+
+const chatContainer = document.querySelector(".container");
+const messages = document.querySelector("#messages");
+
+const inputMessage = document.querySelector("#input-msg");
+const sendMessageButton = document.querySelector("#send-msg-btn");
+let websocket = null;
+let username = null;
 
 function changeDisplay() {
-    if (usernameField.value !== "") {
-        username = usernameField.value; //get the username from the login input field if the value is not empty
-        console.log("Chosen username: " + username);
-        loginContainer.style.display = "none"; //change the css display value form flex to none in order to hide it 
-        mainContainer.style.display = "flex"; //change the css display value form none to flex in order to show it
-    } else {
-        console.log("THE USERNAME HAS TO BE AT LEAST 1 CHARACTER LONG"); 
-    }
+    loginContainer.style.display = "none";
+    chatContainer.style.display = "flex";
+    username = inputUsername.value;
+    console.log("Username: " + username);
+    connectWebSocket();
 }
 
-loginButton.addEventListener("click", changeDisplay); //show the messages on click of the login button
+function connectWebSocket() {
+    websocket = new WebSocket("ws://localhost:8080/chat");//change to port 28852 when testing
 
-const websocket = new WebSocket("ws://localhost:8080/chat");
+    websocket.onopen = function(event) {
+        console.log("WebSocket connection established");
+    };
 
-websocket.onmessage = function(event) { //event being an oncoming message 
-    const message = JSON.parse(event.data);
-    const sender = message.sender;
-    const messageContent = message.content;
-    
-    displayMessage(sender, messageContent);
-}
+    websocket.onmessage = function(event) {
+        const message = JSON.parse(event.data);
+        const sender = message.sender;
+        const content = message.content;
+        const date = message.date;
+        displayMessage(sender, content, date);
+    };
 
-function displayMessage(sender, message) {
-    const messageElement = document.createElement("div"); //create a new div DOM element
-    messageElement.classList.add("message"); //add some predefined styles to the div
+    websocket.onerror = function(event) {
+        console.error("WebSocket error observed:", event);
+    };
 
-    const senderDiv = document.createElement("div");
-    senderDiv.textContent = sender; //set the sender div text to the sender given as a parameter
-    senderDiv.classList.add("sender"); //add style to the sender
-    messageElement.appendChild(senderDiv);//append the sender to the message div
-
-    const textDiv = document.createElement("div");
-    textDiv.textContent = message; //insert the message content into the div
-    messageElement.appendChild(textDiv);//append the message content to the message div
-
-    messageContainer.appendChild(messageElement); //insert the message div into the message container
-    messageContainer.scrollIntoView({behavior:"smooth"}); //if the container overflows, then scroll the appended message into view
+    websocket.onclose = function(event) {
+        console.log("WebSocket connection closed");
+    };
 }
 
 function sendMessage() {
-    if (inputField.value !== "") {
-        const messageContent = inputField.value;
-        const date = new Date().toISOString();
-        console.log(date);
-        //Create a JS object that has the attributes of the Message class defined in the backend
-        const message = {
-            sender: username,
-            content: messageContent,
-            createdAt: date
-        };
+    const messageContent = inputMessage.value
+    const dateTime = new Date().toISOString();
+    const messageObject = {
+        sender: username,
+        content: messageContent,
+        date: dateTime
+    };
 
-        console.log("JS Object created: " + message);
+    const jsonMessage = JSON.stringify(messageObject);
 
-        const jsonMessage = JSON.stringify(message); //Convert the Message object to a JSON String
-        console.log("The JSON has been created: " + jsonMessage);
-
-        websocket.send(jsonMessage); //send the message as json trough the previously established websocket
-        console.log("The message has been sent trough the websocket!");
-        
-        inputField.value = ""; //set the input field content to empty
+    if (websocket && websocket.readyState == WebSocket.OPEN) {
+        websocket.send(jsonMessage);
+        inputMessage.value = "";
+    } else {
+        alert("The message could'nt be sent because the websocket is not open");
     }
 }
 
-sendButton.addEventListener("click", sendMessage); //send a message when the send button is clicked
+function displayMessage(sender, content, date) {
+    console.log(`Displaying message from ${sender} at ${date}`);
+    const senderSpan = document.createElement("span");
+    senderSpan.textContent = sender;
+    senderSpan.classList.add("sender");
+
+    const dateSpan = document.createElement("span");
+    dateSpan.textContent = date;
+    dateSpan.classList.add("date");
+
+    const senderAndDateDiv = document.createElement("div");
+    senderAndDateDiv.classList.add("senderAndDateDiv");
+    senderAndDateDiv.appendChild(senderSpan);
+    senderAndDateDiv.appendChild(dateSpan);
+
+    const contentDiv = document.createElement("div");
+    contentDiv.textContent = content;
+    contentDiv.classList.add("message");
+
+    const messageContainer = document.createElement("div");
+    messageContainer.classList.add("message-container");
+    messageContainer.appendChild(senderAndDateDiv);
+    messageContainer.appendChild(contentDiv);
+
+    messages.appendChild(messageContainer);
+}
+

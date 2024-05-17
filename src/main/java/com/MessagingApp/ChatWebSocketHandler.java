@@ -1,61 +1,55 @@
 package com.MessagingApp;
 
-import org.springframework.stereotype.Controller;
+import org.springframework.javapoet.ClassName;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 
-@Controller
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private static List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
-    private List<Message> allMessages = new CopyOnWriteArrayList<>();
-
-    private final ObjectMapper mapper = new ObjectMapper().registerModules(new JavaTimeModule());
-    
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ChatWebSocketHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(ClassName.class.getName());
+    private static List<String> publicMessages = new CopyOnWriteArrayList<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
-        showPrevoiusMessages(session);//send all the messages in the messages list to the newly joined user
-        //broadcast("User joined the chat!");
+        sendPreviousMessagesToSelf(session);
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        Message messageObject = mapper.readValue(message.getPayload(), Message.class); //convert the received TextMessage (JSON String) to a Message object
-        LOGGER.info("Server received message: \n" + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(messageObject));
-        allMessages.add(messageObject);//add the message object to the allMessages list
-        LOGGER.info("The message object has been added to the allMessages List \n");
-        broadcast(messageObject);
+        broadcast(message.getPayload());
+        LOGGER.info("Received message: " + message.getPayload());
+        saveMessage(message.getPayload());
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) throws Exception {
         sessions.remove(session);
-        //broadcast("User left the chat!");
     }
 
-    private void broadcast(Message message) throws IOException {
-        String jsonMessage = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(message); //Convert the passed Message object back into a JSON String
-        LOGGER.info("Broadcasted message: \n" + jsonMessage);
-        for (WebSocketSession session : sessions) {
-            session.sendMessage(new TextMessage(jsonMessage)); //send the JSON String to every session in the sessions list
+    public void broadcast(String message) throws IOException {
+        for (WebSocketSession session  : sessions) {
+            session.sendMessage(new TextMessage(message));
         }
+        LOGGER.info("The message has been broadcasted");
     }
 
-    private void showPrevoiusMessages(WebSocketSession session) throws IOException {
-        //send all the previous messages to the user 
-        for (Message message : allMessages) {
-            session.sendMessage(new TextMessage(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(message)));
+    public void saveMessage(String message) {
+        publicMessages.add(message);
+        LOGGER.info("The message has been saved");
+    }
+
+    public void sendPreviousMessagesToSelf(WebSocketSession session) throws IOException {
+        for (String message : publicMessages) {
+            session.sendMessage(new TextMessage(message));
         }
+        LOGGER.info("The messages sent previously have been sent to you");
     }
 }
