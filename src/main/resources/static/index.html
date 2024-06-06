@@ -13,16 +13,20 @@
             <button type="submit" id="send-username-btn" onclick="changeDisplay()">SEND</button>
         </div>
     </div>
-    <div class ="container">
-        <div id="messages">
+    <div id="app">
+        <div classs="container" id="users">
         </div>
-        <div id="writer">
-            <input type="text" placeholder="Type a message" id="input-msg" name="input-msg">
-            <button type="submit" id="send-msg-btn" onclick="sendMessage()">SEND</button>
+        <div class ="container">
+            <div id="messages">
+            </div>
+            <div id="writer">
+                <input type="text" placeholder="Type a message" id="input-msg" name="input-msg">
+                <button type="submit" id="send-msg-btn" onclick="sendMessage()">SEND</button>
+            </div>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-    <script src="script.js"></script>
+    <script src="./script.js"></script>
 </body>
 </html>

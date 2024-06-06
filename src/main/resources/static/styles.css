@@ -11,6 +11,7 @@ body {
     align-items: center;
 }
 
+
 #login {
     padding: 10px;
     border-style: solid;
@@ -48,11 +49,48 @@ body {
     flex: 1;
 }
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-.container {
+#app {
     display: none; /*change to display:flex when a user has been inputted*/
-    flex-direction:column;
     height: 100vh;
 }
+
+.container {
+    display: flex;
+    flex-direction:column;
+    height: 100vh;
+    min-width: fit-content;
+    width: 100%;
+}
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+#users {
+    display: flex;
+    min-width: fit-content;
+    width: 30vw;
+    justify-content: center;
+    border-right: solid 1px gainsboro;
+    padding: 5px;
+    flex-direction: column-reverse;
+    overflow-y: auto;
+    background-color: gainsboro;
+}
+
+.user {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: white;
+    border-bottom: solid 1px gray;
+    cursor: pointer;
+}
+
+.user:hover {
+    background-color: gray;
+    border-bottom: solid 1px black;
+}
+
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 #messages {
     display: flex;

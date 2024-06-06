@@ -2,73 +2,123 @@ const loginContainer = document.querySelector(".login-container");
 const inputUsername = document.querySelector("#input-username");
 const sendUsernameButton = document.querySelector("#send-username-btn");
 
+const appContainer = document.querySelector("#app");
+const usersContainer = document.querySelector("#users");
 const chatContainer = document.querySelector(".container");
 const messages = document.querySelector("#messages");
 
 const inputMessage = document.querySelector("#input-msg");
 const sendMessageButton = document.querySelector("#send-msg-btn");
-let websocket = null;
+
+let stompClient = null;
 let username = null;
 
+window.addEventListener('beforeunload', function (event) {
+    fetch("http://localhost:8080/message/deleteAll", {
+        method: "DELETE"
+    })
+    .then(response => response.json())
+    .then(jsonResponse => console.error(jsonResponse))
+    .catch(error => console.error(error));
+});
+
 function changeDisplay() {
-    loginContainer.style.display = "none";
-    chatContainer.style.display = "flex";
     username = inputUsername.value;
-    console.log("Username: " + username);
-    connectWebSocket();
+    if (username !== "") {
+        loginContainer.style.display = "none";
+        appContainer.style.display = "flex";
+        console.log("Username: " + username);
+        connectWebSocket();
+    }
+}
+
+function updateUserList(onlineUsers) {
+    usersContainer.innerHTML = ''; // Clear existing users
+    for (const sessionId in onlineUsers) {
+        const user = onlineUsers[sessionId];
+        if (user != username) {
+            const userDiv = document.createElement('div');
+            userDiv.id = sessionId;
+            userDiv.classList.add('user');
+            userDiv.textContent = user;
+            userDiv.onclick = emptyChatContainer;
+            usersContainer.appendChild(userDiv);
+        }
+    }
+}
+
+function fetchPreviousMessages() {
+    fetch("http://localhost:8080/message/getAll")
+    .then(response => response.json())
+    .then(messages => {
+        messages.forEach(element => {
+            displayMessage(element.sender, element.content, element.sentAt);
+        });
+    })
+    .catch(error => console.error(error));
 }
 
 function connectWebSocket() {
-    websocket = new WebSocket("ws://localhost:8080/chat");//change to port 28852 when testing
+    const socket = new WebSocket("ws://localhost:8080/chat");
+    stompClient = Stomp.over(socket);
 
-    websocket.onopen = function(event) {
-        console.log("WebSocket connection established");
-    };
+    fetchPreviousMessages();
 
-    websocket.onmessage = function(event) {
-        const message = JSON.parse(event.data);
-        const sender = message.sender;
-        const content = message.content;
-        const date = message.date;
-        displayMessage(sender, content, date);
-    };
+    const headers = {username : username}
 
-    websocket.onerror = function(event) {
-        console.error("WebSocket error observed:", event);
-    };
+    stompClient.connect(headers, (frame) => {
+        console.log("Connected: " + frame);
 
-    websocket.onclose = function(event) {
-        console.log("WebSocket connection closed");
-    };
+        stompClient.subscribe("/topic/public", (message) => {
+            const parsedMessage = JSON.parse(message.body);
+            displayMessage(parsedMessage.sender, parsedMessage.content, parsedMessage.sentAt);
+        });
+
+        stompClient.subscribe("/topic/onlineUsers", (message) => {
+            const users = JSON.parse(message.body);
+            console.log("Online users: ", users);
+            updateUserList(users);
+            console.log(usersContainer);
+        }, headers);
+
+    }, (error) => {
+        console.error("Error with websocket", error);
+    });
+}
+
+function inputValidation() {
+    const messageContent = inputMessage.value;
+    return username !== "" && messageContent !== "";
 }
 
 function sendMessage() {
-    const messageContent = inputMessage.value
-    const dateTime = new Date().toISOString();
-    const messageObject = {
-        sender: username,
-        content: messageContent,
-        date: dateTime
-    };
+    const messageContent = inputMessage.value;
+    const sentAt = new Date().toISOString();
 
-    const jsonMessage = JSON.stringify(messageObject);
+    if (inputValidation()) {
+        const message = {
+            sender: username,
+            content: messageContent,
+            sentAt: sentAt
+        };
 
-    if (websocket && websocket.readyState == WebSocket.OPEN) {
-        websocket.send(jsonMessage);
-        inputMessage.value = "";
+        stompClient.send("/app/public", {}, JSON.stringify(message));
     } else {
-        alert("The message could'nt be sent because the websocket is not open");
+        console.log("The message content can't be empty.");
     }
 }
 
 function displayMessage(sender, content, date) {
-    console.log(`Displaying message from ${sender} at ${date}`);
+    const dateObj = new Date(date);
+    const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    const formattedDate = dateObj.toLocaleString('en-US', options).replace(', ', '|');
+
     const senderSpan = document.createElement("span");
     senderSpan.textContent = sender;
     senderSpan.classList.add("sender");
 
     const dateSpan = document.createElement("span");
-    dateSpan.textContent = date;
+    dateSpan.textContent = formattedDate;
     dateSpan.classList.add("date");
 
     const senderAndDateDiv = document.createElement("div");
@@ -86,5 +136,9 @@ function displayMessage(sender, content, date) {
     messageContainer.appendChild(contentDiv);
 
     messages.appendChild(messageContainer);
+    inputMessage.value = "";
 }
 
+function emptyChatContainer() {
+    chatContainer.innerHTML = "";
+}
