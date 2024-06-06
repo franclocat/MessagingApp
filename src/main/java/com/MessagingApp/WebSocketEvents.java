@@ -1,0 +1,72 @@
+package com.MessagingApp;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+import org.springframework.web.socket.messaging.SessionSubscribeEvent;
+
+@Component
+public class WebSocketEvents {
+
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketEvents.class);
+
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ConcurrentHashMap<String, String> onlineUsers = new ConcurrentHashMap<>();
+
+    public WebSocketEvents(SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
+    }
+
+    @EventListener
+    public void handleWebSocketConnectListener(SessionSubscribeEvent event) {
+        try {
+            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+            String sessionID = accessor.getSessionId();
+            String username = accessor.getFirstNativeHeader("username");
+
+            logger.info("Received a new connection with sessionID: {} and username {}", sessionID, username);
+
+            if (username != null) {
+                onlineUsers.put(sessionID, username);
+                logger.info("Online user saved in the HashMap with key {} and value {}", sessionID, username);
+                logger.info("Online users before sending: {}", onlineUsers);
+
+                // Send the updated online users list to all clients
+                messagingTemplate.convertAndSend("/topic/onlineUsers", onlineUsers);
+
+                logger.info("Online users sent: {}", onlineUsers);
+            } else {
+                logger.warn("Username is null for sessionID: {}", sessionID);
+            }
+        } catch (Exception e) {
+            logger.error("Error when saving the online user: ", e);
+        }
+    }
+
+    @EventListener
+    public void handleSessionDisconnect(SessionDisconnectEvent event) {
+        try {
+            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+            String sessionID = accessor.getSessionId();
+
+            logger.info("User disconnected with sessionID: {}", sessionID);
+
+            onlineUsers.remove(sessionID);
+            logger.info("Online users before sending: {}", onlineUsers);
+
+            // Send the updated online users list to all clients
+            messagingTemplate.convertAndSend("/topic/onlineUsers", onlineUsers);
+
+            logger.info("Online users sent: {}", onlineUsers);
+        } catch (Exception e) {
+            logger.error("Error when disconnecting: ", e);
+        }
+    }
+}
+
