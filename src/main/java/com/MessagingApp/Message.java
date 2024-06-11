@@ -14,11 +14,29 @@ public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+    
     private String sender;
+    private String receiver;
     private String content;
     private LocalDateTime sentAt;
 
     public Message() {
+    }
+
+    public Message(Long id, String sender, String receiver, String content, LocalDateTime sentAt) {
+        this.id = id;
+        this.sender = sender;
+        this.receiver = receiver;
+        this.content = content;
+        this.sentAt = sentAt;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getSender() {
@@ -45,12 +63,11 @@ public class Message {
         this.sentAt = sentAt;
     }
 
-    public Long getId() {
-        return id;
+    public String getReceiver() {
+        return receiver;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
     }
-    
 }

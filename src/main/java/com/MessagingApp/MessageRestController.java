@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -26,14 +27,19 @@ public class MessageRestController {
         }
     }
 
-    @GetMapping("/message/getAll")
+    @GetMapping("/message/getAllPublicMessages")
     public ResponseEntity<List<Message>> getMessages() {
-        return ResponseEntity.ok(messageService.getAllMessages());
+        return ResponseEntity.ok(messageService.getPublicChat());
     }
 
     @DeleteMapping("message/deleteAll")
     public ResponseEntity<?> deleteAllMessages() {
         messageService.deleteAllMessages();
         return ResponseEntity.ok().body("All the messages have been deleted from the database");
+    }
+
+    @GetMapping("/chat-history")
+    public ResponseEntity<?> getChatHistory(@RequestParam String user1, @RequestParam String user2) {
+        return ResponseEntity.ok().body(messageService.getMessageHistory(user1, user2));
     }
 }

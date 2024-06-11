@@ -22,4 +22,12 @@ public class MessageService {
     public void deleteAllMessages() {
         messageRepository.deleteAll();
     }
+
+    public List<Message> getMessageHistory(String user1, String user2) {
+        return messageRepository.findChatHistoryBetween(user1, user2);
+    }
+
+    public List<Message> getPublicChat() {
+        return messageRepository.loadPublicChat();
+    }
 }
