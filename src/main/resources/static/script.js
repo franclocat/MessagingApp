@@ -35,33 +35,44 @@ function loadPublicChat() {
 }
 
 publicChatButton.addEventListener("click", function () {
-  changeChatWithTo("Public chat");
+  changeChatWithTo("Public chat", this);
   loadPublicChat();
 });
 
-function changeChatWithTo(user) {
+function changeChatWithTo(user, element) {
   messages.innerHTML = "";
   selectedChat = user; // Update selectedChat instead of receiver
   console.log("new selectedChat: " + selectedChat);
   chatWith.textContent = user;
-  user !== "Public chat" && loadChatHistory(user);
+  if (user !== "Public chat") {
+    let messageCounter = element.querySelector(".new-message-counter");
+    if (messageCounter) {
+      element.removeChild(messageCounter);
+    }
+    loadChatHistory(user);
+  }
 }
 
 function updateUserList(onlineUsers) {
-  const userDivs = usersContainer.querySelectorAll("div.user"); // Select only divs with the class user
+  const userDivs = usersContainer.querySelectorAll("div.user-container"); // Select only divs with the class user-container
   userDivs.forEach((div) => usersContainer.removeChild(div));
 
   for (const sessionId in onlineUsers) {
     const user = onlineUsers[sessionId];
     if (user != username) {
-      const userDiv = document.createElement("div");
-      //userDiv.id = sessionId;
-      userDiv.classList.add("user");
-      userDiv.textContent = user;
-      userDiv.addEventListener("click", function () {
-        changeChatWithTo(user);
+      const userContainer = document.createElement("div");
+      userContainer.classList.add("user-container");
+
+      const userSpan = document.createElement("span");
+      userSpan.classList.add("user");
+      userSpan.textContent = user;
+      userContainer.appendChild(userSpan);
+
+      userContainer.addEventListener("click", function () {
+        changeChatWithTo(user, this);
       });
-      usersContainer.appendChild(userDiv);
+
+      usersContainer.appendChild(userContainer);
     }
   }
 }
@@ -94,6 +105,42 @@ function loadChatHistory(user) {
     });
 }
 
+function changeNewMessageCounter(sender) {
+  let userContainers = document.querySelectorAll('.user-container');
+    
+  userContainers.forEach(container => {
+    var userElement = container.querySelector('.user');
+    if (userElement && userElement.textContent === sender) {
+      var messageCounter = container.querySelector('.new-message-counter');
+      
+      if (messageCounter) {
+        // Increment the counter by 1
+        let currentCount = parseInt(messageCounter.textContent, 10);
+        if (isNaN(currentCount)) {
+          currentCount = 0;
+        }
+        messageCounter.textContent = currentCount + 1;
+      } else {
+        const newMessageCounter = document.createElement("span");
+        newMessageCounter.classList.add("new-message-counter");
+        newMessageCounter.textContent = 1;
+        container.appendChild(newMessageCounter);
+      }
+    }
+  });
+}
+
+function sendToTop(sender) {
+  let userContainers = document.querySelectorAll('.user-container');
+    
+  userContainers.forEach(container => {
+    var userElement = container.querySelector('.user');
+    if (userElement && userElement.textContent === sender) {
+      usersContainer.prepend(container);
+    }
+  });
+}
+
 function connectWebSocket() {
   const socket = new WebSocket("ws://localhost:8080/chat");
   stompClient = Stomp.over(socket);
@@ -121,6 +168,9 @@ function connectWebSocket() {
             parsedMessage.content,
             parsedMessage.sentAt
           );
+        } else {
+          changeNewMessageCounter(parsedMessage.sender);
+          sendToTop(parsedMessage.sender);
         }
       });
 
@@ -173,6 +223,7 @@ function sendMessage() {
     } else {
       displayMessage(username, content, sentAt);
       stompClient.send("/app/user", {}, JSON.stringify(message));
+      sendToTop(selectedChat);
     }
     inputMessage.value = "";
   } else {

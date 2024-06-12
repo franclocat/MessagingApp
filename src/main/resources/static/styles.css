@@ -92,19 +92,19 @@ body {
     background-color: #45a049;
 }
 
-.user {
+.user-container {
     display: flex;
-    flex-direction: column;
-    margin-bottom: 10px;
+    align-items: center;
     padding: 10px;
     border-radius: 10px;
     background-color: white;
-    border-bottom: solid 1px gray;
+    border: 1px solid #ddd;
+    margin-bottom: 5px;
     cursor: pointer;
     transition: 0.3s;
 }
 
-.user:hover {
+.user-container:hover {
     color: white;
     background-color: #45a049;
 }
@@ -112,6 +112,17 @@ body {
 .user:active {
     color: white;
     background-color: #45a049;
+}
+
+.user {
+    flex: 1;
+}
+
+.new-message-counter {
+    font-size: x-small;
+    font-weight: bold;
+    color: lightskyblue;
+    padding: 2px 5px;
 }
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
