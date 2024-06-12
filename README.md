@@ -1,2 +1,2 @@
 # MessagingApp
- Simple messaging app with the use of websocket
+ Simple messaging app with the use of websocket.
